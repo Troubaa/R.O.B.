@@ -110,7 +110,7 @@ void search(int time){                                                          
     }//if
 }//end search-------------------------------------------------------------------|
 
-void gpsmovement(){                                                 //gpsmovement
+void gpsmovement(int time){                                         //gpsmovement
 
 }//end gpsmovement--------------------------------------------------------------|
 
