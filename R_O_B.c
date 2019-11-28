@@ -66,7 +66,7 @@ void search(int time){                                                          
     if (fRange > 1  && bRange == 125){
         timeHold = time;
         isTRight = true;
-        SetStatusMessage("your a bitch");
+        SetStatusMessage("nvm you cool");
     }//if
 
     //turn right for predetermined time
