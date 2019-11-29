@@ -58,8 +58,56 @@ void search(int time){                                                          
     fRange = GetSensorData(2);
     bRange = GetSensorData(3);
 
+    //initialize values
+    if(time < 100)
+        timeHold = false;
 
+    //if front sensor reads something and isnt holding a time value turn right
+    if (fRange > 1  && bRange == 125){
+        timeHold = time;
+        isTRight = true;
+        SetStatusMessage("nvm you cool");
+    }//if
 
+    //turn right for predetermined time
+    if(isTRight == true){
+        SetMotorSpeeds(100,70);
+        if (time >= (timeHold + 5)) {
+            isTRight = false;
+            timeHold =0;
+        }//if
+        SetStatusMessage("HOLDING RIGHT TURN");
+    }//if
+
+    //if front sensor reads something and isnt holding a time value turn right
+    if (bRange > 1  && fRange == 125){
+        timeHold = time;
+        isTLeft = true;
+        SetStatusMessage("LEFT TURN");
+    }//if
+
+    //turn right for predetermined time
+    if(isTLeft == true){
+        SetMotorSpeeds(70,100);
+        if (time >= (timeHold + 30)) {
+            isTLeft = false;
+            timeHold = 0;
+        }//if
+        SetStatusMessage("HOLDING LEFT TURN");
+    }//if
+
+    //sensors read nothing = randomly move around
+    if(fRange == 125 && bRange == 125 && timeHold == false){
+        rand = GetRandomNumber(1);
+        switch(rand) {
+            case 0:
+                SetMotorSpeeds(70,100);
+                break;
+            case 1:
+                SetMotorSpeeds(100,70);
+                break;
+        }//switch
+    }//if
 }//end search-------------------------------------------------------------------|
 
 void gpsmovement(int time){                                         //gpsmovement
