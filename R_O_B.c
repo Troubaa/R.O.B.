@@ -5,20 +5,20 @@
 #include "competition.h"
 #include "R_O_B.h"
 
+typedef enum{
+    false, true
+} bool;
 
 //functions
-void generator();
-void movement(int time);
-void gpsmovement(int time);
+void determine(bool* isdef, bool* isAtt, bool* isSearch, bool* isStart, int time);
+void generator (bool isdef, bool isAtt, bool isSearch, bool isStart);
+void movement (bool time);
+void gpsmovement (bool time);
 void heading(float hWant, GPS_INFO gps);
-void search(int time);
+void searchbool (bool time);
 void sensors();
 void shields();
 void weapons();
-
-typedef enum{
-    false, true, init
-} bool;
 
 //setupROB - Robot setup
 void setupROB(void){                                                    //setupROB
@@ -29,39 +29,175 @@ void setupROB(void){                                                    //setupR
 }//setupROB end------------------------------------------------------------------|
 
 //ROB_AI - Robot Actions
-void ROB_AI(int time){                                                   //ROB_AI
-    movement(time);
+void ROB_AI (int time) {//ROB_AI
+    bool isSearch;           //if in searching mode
+    bool isAttack;           //if in attacking mode
+    bool isDefense;          //if in defense
+    bool isStart;            //if it is the Start of the Game.\
 
+    if (isStart == false)
+        isDefense = true;   //for testing
+
+    determine(&isDefense, &isAttack, &isSearch, &isStart, time);
+    generator(isDefense, isAttack, isSearch, isStart);
 }//ROB_AI end--------------------------------------------------------------------|
 
-void generator(){                                                     //generator
+void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){                                                     //generator
+    bool sysChange;              //System change priorities
+
+    SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    SYSTEM priStartSys[2] = {SYSTEM_SHIELDS, SYSTEM_SENSORS};                                                //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    SYSTEM priAttSys[4] = {SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_SHIELDS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };              //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+
+
+    //if in Start mode
+    if(isStart == true) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 1200);
+        SetSystemChargeRate(SYSTEM_LASERS, 175);
+        SetSystemChargeRate(SYSTEM_MISSILES, 0);
+        sysChange = SetSystemChargePriorites(priStartSys);
+        SetStatusMessage("Start Mode");
+    }//if
+
+    //if in Defense mode
+    if(isDefense == true) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
+        SetSystemChargeRate(SYSTEM_LASERS, 200);
+        SetSystemChargeRate(SYSTEM_MISSILES, 200);
+        sysChange = SetSystemChargePriorites(priDefSys);
+        SetStatusMessage("Defense Mode");
+    }//if
+
+    //if in Attack mode
+    if(isAttack == true) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 500);
+        SetSystemChargeRate(SYSTEM_MISSILES, 500);
+        SetSystemChargeRate(SYSTEM_LASERS, 400);
+        sysChange = SetSystemChargePriorites(priAttSys);
+        SetStatusMessage("Attack Mode");
+    }//if
+
+    //if in Search mode
+    if(isSearch == true) {
+        //if Rockets and lasers full
+        if (GetSystemEnergy(SYSTEM_MISSILES) == 100 && GetSystemEnergy(SYSTEM_LASERS) == 50){
+            SetSystemChargeRate(SYSTEM_SHIELDS, 1400);
+            SetSystemChargeRate(SYSTEM_LASERS, 0);
+            SetSystemChargeRate(SYSTEM_MISSILES, 0);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode R & L");
+        }//if
+        //if lasers full
+        if (GetSystemEnergy(SYSTEM_MISSILES) == 100 && GetSystemEnergy(SYSTEM_LASERS) == 50){
+            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
+            SetSystemChargeRate(SYSTEM_LASERS, 0);
+            SetSystemChargeRate(SYSTEM_MISSILES, 400);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode R & L");
+        }//if
+        //if rockets full
+        if (GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
+            SetSystemChargeRate(SYSTEM_LASERS, 400);
+            SetSystemChargeRate(SYSTEM_MISSILES, 0);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode R");
+        }//if
+        //if shields full
+        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+            SetSystemChargeRate(SYSTEM_LASERS, 480);
+            SetSystemChargeRate(SYSTEM_MISSILES, 920);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode R");
+        }//if
+        //if shields full and rockets full
+        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+            SetSystemChargeRate(SYSTEM_LASERS, 1400);
+            SetSystemChargeRate(SYSTEM_MISSILES, 0);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode R");
+        }//if
+
+    }//if
 
 }//end generator-----------------------------------------------------------------|
 
-void movement(int time){                                               //movement
-    char i =0;
+void determine (bool* isDefense,bool* isAttack,bool* isSearch, bool* isStart, int time){
+    bool rRadar, lRadar, fRange, bRange;               //values for the radars
 
-}//end movement----------------------------------------------------------------|
-
-void search(int time){                                                  //search
-    int i;
-    float turn;
-    int rand;                                         //random number generator
-    int rRadar, lRadar, fRange, bRange;               //values for the radars
-    int isTRight;                              //if turning right
-    int isTLeft;                              //if turning Left
-
+    //get sensor data to determine what state we are in
     rRadar = GetSensorData(0);
     lRadar = GetSensorData(1);
     fRange = GetSensorData(2);
     bRange = GetSensorData(3);
 
+    //if start
+    if (time <= 250) {
+        *isStart = true;
+        *isAttack = false;
+        *isSearch = false;
+        *isDefense = false;
+    }//if
+    //The end of the start when shields full
+    if (*isStart == true) {
+        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000) {
+            *isStart = false;
+        }//if
+    }//is
 
-    turn = gpsmovement(time);
+    //if we want to defend
+    if (rRadar == false && lRadar == false && fRange == false && GetSystemEnergy(SYSTEM_SHIELDS) <= 500) {
+        *isAttack = false;
+        *isSearch = false;
+        *isDefense = true;
+    }//if
+
+    //if we want to attack
+    if (rRadar == true || lRadar == true) {
+        *isAttack = true;
+        *isSearch = false;
+        *isDefense = false;
+    }//if
+
+    //if we want to defend
+    if (rRadar == false && lRadar == false) {
+        *isAttack = false;
+        *isSearch = true;
+        *isDefense = false;
+    }//if
+
+}//end determine----------------------------------------------------------------|
+
+void movement(bool time){                                               //movement
+    char i =0;
+
+}//end movement----------------------------------------------------------------|
+
+void search(bool time){                                                  //search
+
 
 }//end search-------------------------------------------------------------------|
 
-void gpsmovement(int time){                                         //gpsmovement
+
+void sensors(){                                                        //sensors
+
+}//end sensors------------------------------------------------------------------|
+
+void shields(){                                                        //shields
+
+}//end shields------------------------------------------------------------------|
+
+void weapons(){                                                        //weapons
+
+}//end weapons------------------------------------------------------------------|
+
+
+//------------------------FOR FUTURE EDITING------------------------------------|
+
+void gpsmovementbool (bool time){                                         //gpsmovement
     GPS_INFO gps;
     float turn = 0;
 
@@ -134,15 +270,3 @@ void heading(float hWant, GPS_INFO gps){                                  //head
         SetMotorSpeeds(100,0);
     }//if
 }//end heading-----------------------------------------------------------------|
-
-void sensors(){                                                        //sensors
-
-}//end sensors------------------------------------------------------------------|
-
-void shields(){                                                        //shields
-
-}//end shields------------------------------------------------------------------|
-
-void weapons(){                                                        //weapons
-
-}//end weapons------------------------------------------------------------------|
