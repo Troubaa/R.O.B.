@@ -89,12 +89,12 @@ void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){       
             SetStatusMessage("Search Mode R & L");
         }//if
         //if lasers full
-        if (GetSystemEnergy(SYSTEM_MISSILES) == 100 && GetSystemEnergy(SYSTEM_LASERS) == 50){
+        if (GetSystemEnergy(SYSTEM_LASERS) == 50){
             SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
             SetSystemChargeRate(SYSTEM_LASERS, 0);
             SetSystemChargeRate(SYSTEM_MISSILES, 400);
             sysChange = SetSystemChargePriorites(priSearchSys);
-            SetStatusMessage("Search Mode R & L");
+            SetStatusMessage("Search Mode L");
         }//if
         //if rockets full
         if (GetSystemEnergy(SYSTEM_MISSILES) == 100) {
@@ -110,7 +110,7 @@ void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){       
             SetSystemChargeRate(SYSTEM_LASERS, 480);
             SetSystemChargeRate(SYSTEM_MISSILES, 920);
             sysChange = SetSystemChargePriorites(priSearchSys);
-            SetStatusMessage("Search Mode R");
+            SetStatusMessage("Search Mode S");
         }//if
         //if shields full and rockets full
         if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
@@ -118,7 +118,30 @@ void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){       
             SetSystemChargeRate(SYSTEM_LASERS, 1400);
             SetSystemChargeRate(SYSTEM_MISSILES, 0);
             sysChange = SetSystemChargePriorites(priSearchSys);
-            SetStatusMessage("Search Mode R");
+            SetStatusMessage("Search Mode S & R");
+        }//if
+        //if shields full and laser full
+        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+            SetSystemChargeRate(SYSTEM_LASERS, 0);
+            SetSystemChargeRate(SYSTEM_MISSILES, 1400);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode S & L");
+        }//if
+        //if none
+        if (GetSystemEnergy(SYSTEM_SHIELDS) != 1000 && GetSystemEnergy(SYSTEM_LASERS) != 50 && GetSystemEnergy(SYSTEM_MISSILES) != 100) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
+            SetSystemChargeRate(SYSTEM_LASERS, 350);
+            SetSystemChargeRate(SYSTEM_MISSILES, 50);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode none");
+        }//if
+        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
+            SetSystemChargeRate(SYSTEM_LASERS, 350);
+            SetSystemChargeRate(SYSTEM_MISSILES, 50);
+            sysChange = SetSystemChargePriorites(priSearchSys);
+            SetStatusMessage("Search Mode all");
         }//if
 
     }//if
