@@ -10,6 +10,7 @@
 void generator();
 void movement(int time);
 void gpsmovement(int time);
+void heading(float hWant, GPS_INFO gps);
 void search(int time);
 void sensors();
 void shields();
@@ -28,27 +29,24 @@ void setupROB(void){                                                    //setupR
 }//setupROB end------------------------------------------------------------------|
 
 //ROB_AI - Robot Actions
-void ROB_AI(int time){                                              //ROB_AI
+void ROB_AI(int time){                                                   //ROB_AI
     movement(time);
+
 }//ROB_AI end--------------------------------------------------------------------|
 
 void generator(){                                                     //generator
 
 }//end generator-----------------------------------------------------------------|
 
-void movement(int time){                                                       //movement
-    int isSearch = true;
+void movement(int time){                                               //movement
+    char i =0;
 
-    if (isSearch == true){            //if search
-        search(time);
-    }//if search
+}//end movement----------------------------------------------------------------|
 
-}//end movement-----------------------------------------------------------------|
-
-void search(int time){                                                          //search
-    GPS_INFO gps;                                     //structure of gps values             x, y, heading
+void search(int time){                                                  //search
+    int i;
+    float turn;
     int rand;                                         //random number generator
-    int timeHold;                                 //time at certain point grabbed
     int rRadar, lRadar, fRange, bRange;               //values for the radars
     int isTRight;                              //if turning right
     int isTLeft;                              //if turning Left
@@ -58,61 +56,84 @@ void search(int time){                                                          
     fRange = GetSensorData(2);
     bRange = GetSensorData(3);
 
-    //initialize values
-    if(time < 100)
-        timeHold = false;
 
-    //if front sensor reads something and isnt holding a time value turn right
-    if (fRange > 1  && bRange == 125){
-        timeHold = time;
-        isTRight = true;
-        SetStatusMessage("nvm you cool");
-    }//if
+    turn = gpsmovement(time);
 
-    //turn right for predetermined time
-    if(isTRight == true){
-        SetMotorSpeeds(100,70);
-        if (time >= (timeHold + 5)) {
-            isTRight = false;
-            timeHold =0;
-        }//if
-        SetStatusMessage("HOLDING RIGHT TURN");
-    }//if
-
-    //if front sensor reads something and isnt holding a time value turn right
-    if (bRange > 1  && fRange == 125){
-        timeHold = time;
-        isTLeft = true;
-        SetStatusMessage("LEFT TURN");
-    }//if
-
-    //turn right for predetermined time
-    if(isTLeft == true){
-        SetMotorSpeeds(70,100);
-        if (time >= (timeHold + 30)) {
-            isTLeft = false;
-            timeHold = 0;
-        }//if
-        SetStatusMessage("HOLDING LEFT TURN");
-    }//if
-
-    //sensors read nothing = randomly move around
-    if(fRange == 125 && bRange == 125 && timeHold == false){
-        rand = GetRandomNumber(1);
-        switch(rand) {
-            case 0:
-                SetMotorSpeeds(70,100);
-                break;
-            case 1:
-                SetMotorSpeeds(100,70);
-                break;
-        }//switch
-    }//if
 }//end search-------------------------------------------------------------------|
 
 void gpsmovement(int time){                                         //gpsmovement
+    GPS_INFO gps;
+    float turn = 0;
 
-}//end gpsmovement--------------------------------------------------------------|
+    //get gps info
+    GetGPSInfo(&gps);
+
+    //inside zone 1 move to heading 135
+    if (gps.x >= 275 && gps.y <= 100){
+        heading(135, gps);
+    }//if
+
+    //inside zone 2 move to heading 90
+    if (gps.x >= 100 && gps.x <= 275 && gps.y <= 100){
+        heading(90, gps);
+    }//if
+
+    //inside zone 3 move to heading 45
+    if (gps.x <= 100 && gps.y <= 100){
+        heading(45, gps);
+    }//if
+
+    //inside zone 4 move to heading 180
+    if (gps.x >= 275 && gps.y >= 100 && gps.y <= 275){
+        heading(180, gps);
+    }//if
+
+    //inside zone 5 do nothing
+
+    //inside zone 6 move to heading 0/360
+    if(gps.x <= 100 && gps.y >= 100 && gps.y <=275){
+        heading(360, gps);
+    }//if
+
+    //inside zone 7 move to heading 225
+    if (gps.x >= 275 && gps.y >= 275){
+        heading(225, gps);
+    }//if
+
+    //inside zone 8 move to heading 270
+    if (gps.x >= 100 && gps.x <= 275 && gps.y >= 275){
+        heading(270, gps);
+    }//if
+
+    //inside zone 9 move to heading 315
+    if (gps.x <= 100 && gps.y >= 275){
+        heading(315, gps);
+    }//if
+}//end gpsmovement-------------------------------------------------------------|
+
+//heading - this function will grab the wanted heading
+//          to turn towards and turn the robot to the wanted heading
+void heading(float hWant, GPS_INFO gps){                                  //heading
+    float head, gHead;
+
+    head = hWant - gps.heading;
+    //turn left by head
+    if(head >= 0 && head <=180){
+        SetMotorSpeeds(100,0);
+    }//if
+    //turn right by 360 - head
+    if(head > 180){
+        SetMotorSpeeds(0,100);
+    }//if
+    //turn right by head
+    if(head < 0 && head >= -180){
+        SetMotorSpeeds(0,100);
+    }//if
+    //turn left by 360 + head
+    if(head <= -180){
+        SetMotorSpeeds(100,0);
+    }//if
+}//end heading-----------------------------------------------------------------|
 
 void sensors(){                                                        //sensors
 
