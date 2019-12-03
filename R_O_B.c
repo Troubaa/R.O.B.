@@ -13,7 +13,7 @@ typedef enum{
 //functions
 void determine(bool* isdef, bool* isAtt, bool* isSearch, bool* isStart, int timer);
 void generator (bool isdef, bool isAtt, bool isSearch, bool isStart);
-void movement (int timer, bool isSearch, bool isAttack, bool isDefense, bool isStart, GPS_INFO gps);
+void movement (int timer, bool isSearch, bool isAttack, bool isDefense, bool isStart, GPS_INFO gps, int movedir);
 int location (GPS_INFO gps);
 int heading(GPS_INFO gps);
 void searchbool (bool time);
@@ -39,6 +39,13 @@ void ROB_AI (int time) {//ROB_AI
 
     static int timer;
 
+    static int search_direction; // gonna see if this way of scanning works
+    if (timer == 0) {
+        search_direction = 1;
+    } else if(timer % 4 == 0) {
+        search_direction = search_direction * -1;
+    }
+
     determine(&isDefense, &isAttack, &isSearch, &isStart, timer);
     generator(isDefense, isAttack, isSearch, isStart);
     if(isSearch == true) {
@@ -50,7 +57,7 @@ void ROB_AI (int time) {//ROB_AI
             GetGPSInfo(&gps);        //Retrieves GPS info
         }
     }
-    movement(timer, isSearch, isAttack, isDefense, isStart, gps);
+    movement(timer, isSearch, isAttack, isDefense, isStart, gps, movedir);
     timer += 1;
 }//ROB_AI end--------------------------------------------------------------------|
 
@@ -211,7 +218,7 @@ void determine (bool* isDefense,bool* isAttack,bool* isSearch, bool* isStart, in
 
 }//end determine----------------------------------------------------------------|
 
-void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isStart, GPS_INFO gps){                                               //movement
+void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isStart, GPS_INFO gps, int movedir){                                               //movement
     char i =0;
 
     if(isStart) {
@@ -330,7 +337,7 @@ int location(GPS_INFO gps){                                         //location
     //inside zone 4
     if (gps.x >= 275 && gps.y >= 100 && gps.y <= 275){
 
-        return 4;
+        return 1;
     }//if
 
     //inside zone 5 if no other zone returns at end of function
@@ -373,9 +380,9 @@ int heading(GPS_INFO gps){//determining search
     } else if(location(gps) == 3) {
         return 225;
     } else if(location(gps) == 4) {
-        return 180;
-    } else if(location(gps) == 6) {
         return 0;
+    } else if(location(gps) == 6) {
+        return 180;
     } else if(location(gps) == 7) {
         return 45;
     } else if(location(gps) == 8) {
@@ -385,25 +392,6 @@ int heading(GPS_INFO gps){//determining search
     } else
         return -1; //if centre quadrant
 
-/*    float head, gHead;
-
-    head = hWant - gps.heading;
-    //turn left by head
-    if(head >= 0 && head <=180){
-        SetMotorSpeeds(100,0);
-    }//if
-    //turn right by 360 - head
-    if(head > 180){
-        SetMotorSpeeds(0,100);
-    }//if
-    //turn right by head
-    if(head < 0 && head >= -180){
-        SetMotorSpeeds(0,100);
-    }//if
-    //turn left by 360 + head
-    if(head <= -180){
-        SetMotorSpeeds(100,0);
-    }//if */
 }//end heading-----------------------------------------------------------------|
 
 //IsOnTrack: checks if robot is on heading during search
