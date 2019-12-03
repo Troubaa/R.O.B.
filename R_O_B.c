@@ -51,105 +51,88 @@ void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){       
     bool sysChange;              //System change priorities
 
     SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
-    SYSTEM priStartSys[2] = {SYSTEM_SHIELDS, SYSTEM_SENSORS};                                                //System priorities 0=shields 1=sensors 2=lasers 3=missiles
     SYSTEM priAttSys[4] = {SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_SHIELDS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
     SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };              //System priorities 0=shields 1=sensors 2=lasers 3=missiles
 
-
     //if in Start mode
     if(isStart == true) {
-        SetSystemChargeRate(SYSTEM_SHIELDS, 1200);
-        SetSystemChargeRate(SYSTEM_LASERS, 175);
-        SetSystemChargeRate(SYSTEM_MISSILES, 0);
         sysChange = SetSystemChargePriorites(priStartSys);
         SetStatusMessage("Start Mode");
     }//if
 
     //if in Defense mode
     if(isDefense == true) {
-        SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
-        SetSystemChargeRate(SYSTEM_LASERS, 200);
-        SetSystemChargeRate(SYSTEM_MISSILES, 200);
         sysChange = SetSystemChargePriorites(priDefSys);
         SetStatusMessage("Defense Mode");
     }//if
 
     //if in Attack mode
     if(isAttack == true) {
-        SetSystemChargeRate(SYSTEM_SHIELDS, 500);
-        SetSystemChargeRate(SYSTEM_MISSILES, 500);
-        SetSystemChargeRate(SYSTEM_LASERS, 400);
         sysChange = SetSystemChargePriorites(priAttSys);
         SetStatusMessage("Attack Mode");
     }//if
 
     //if in Search mode
     if(isSearch == true) {
-        //if lasers full
-        if (GetSystemEnergy(SYSTEM_LASERS) == 50){
-            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
-            SetSystemChargeRate(SYSTEM_LASERS, 0);
-            SetSystemChargeRate(SYSTEM_MISSILES, 400);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-  //          SetStatusMessage("Search Mode L");
-        }//if
-        //if rockets full
-        if (GetSystemEnergy(SYSTEM_MISSILES) == 100) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
-            SetSystemChargeRate(SYSTEM_LASERS, 400);
-            SetSystemChargeRate(SYSTEM_MISSILES, 0);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode R");
-        }//if
-        //if shields full
-        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
-            SetSystemChargeRate(SYSTEM_LASERS, 480);
-            SetSystemChargeRate(SYSTEM_MISSILES, 920);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode S");
-        }//if
-        //if Rockets and lasers full
-        if (GetSystemEnergy(SYSTEM_MISSILES) == 100 && GetSystemEnergy(SYSTEM_LASERS) == 50){
-            SetSystemChargeRate(SYSTEM_SHIELDS, 1400);
-            SetSystemChargeRate(SYSTEM_LASERS, 0);
-            SetSystemChargeRate(SYSTEM_MISSILES, 0);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode R & L");
-        }//if
-        //if shields full and rockets full
-        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
-            SetSystemChargeRate(SYSTEM_LASERS, 1400);
-            SetSystemChargeRate(SYSTEM_MISSILES, 0);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode S & R");
-        }//if
-        //if shields full and laser full
-        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 0);
-            SetSystemChargeRate(SYSTEM_LASERS, 0);
-            SetSystemChargeRate(SYSTEM_MISSILES, 1400);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode S & L");
-        }//if
-        //if none
-        if (GetSystemEnergy(SYSTEM_SHIELDS) != 1000 && GetSystemEnergy(SYSTEM_LASERS) != 50 && GetSystemEnergy(SYSTEM_MISSILES) != 100) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
-            SetSystemChargeRate(SYSTEM_LASERS, 350);
-            SetSystemChargeRate(SYSTEM_MISSILES, 50);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode none");
-        }//if
-        if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
-            SetSystemChargeRate(SYSTEM_SHIELDS, 1000);
-            SetSystemChargeRate(SYSTEM_LASERS, 350);
-            SetSystemChargeRate(SYSTEM_MISSILES, 50);
-            sysChange = SetSystemChargePriorites(priSearchSys);
-//            SetStatusMessage("Search Mode all");
-        }//if
-
+        sysChange = SetSystemChargePriorites(priSearchSys);
     }//if
+
+    //if lasers full
+    if (GetSystemEnergy(SYSTEM_LASERS) == 50){
+        SetSystemChargeRate(SYSTEM_SHIELDS, 600);
+        SetSystemChargeRate(SYSTEM_LASERS, 0);
+        SetSystemChargeRate(SYSTEM_MISSILES, 600);
+        //          SetStatusMessage("Search Mode L");
+    }//if
+    //if rockets full
+    if (GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 600);
+        SetSystemChargeRate(SYSTEM_LASERS, 500);
+        SetSystemChargeRate(SYSTEM_MISSILES, 0);
+//            SetStatusMessage("Search Mode R");
+    }//if
+    //if shields full
+    if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+        SetSystemChargeRate(SYSTEM_LASERS, 500);
+        SetSystemChargeRate(SYSTEM_MISSILES, 600);
+//            SetStatusMessage("Search Mode S");
+    }//if
+    //if Rockets and lasers full
+    if (GetSystemEnergy(SYSTEM_MISSILES) == 100 && GetSystemEnergy(SYSTEM_LASERS) == 50){
+        SetSystemChargeRate(SYSTEM_SHIELDS, 600);
+        SetSystemChargeRate(SYSTEM_LASERS, 0);
+        SetSystemChargeRate(SYSTEM_MISSILES, 0);
+//            SetStatusMessage("Search Mode R & L");
+    }//if
+    //if shields full and rockets full
+    if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+        SetSystemChargeRate(SYSTEM_LASERS, 500);
+        SetSystemChargeRate(SYSTEM_MISSILES, 0);
+//            SetStatusMessage("Search Mode S & R");
+    }//if
+    //if shields full and laser full
+    if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+        SetSystemChargeRate(SYSTEM_LASERS, 0);
+        SetSystemChargeRate(SYSTEM_MISSILES, 600);
+//            SetStatusMessage("Search Mode S & L");
+    }//if
+    //if none
+    if (GetSystemEnergy(SYSTEM_SHIELDS) != 1000 && GetSystemEnergy(SYSTEM_LASERS) != 50 && GetSystemEnergy(SYSTEM_MISSILES) != 100) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 500);
+        SetSystemChargeRate(SYSTEM_LASERS, 400);
+        SetSystemChargeRate(SYSTEM_MISSILES, 500);
+//            SetStatusMessage("Search Mode none");
+    }//if
+    if (GetSystemEnergy(SYSTEM_SHIELDS) == 1000 && GetSystemEnergy(SYSTEM_LASERS) == 50 && GetSystemEnergy(SYSTEM_MISSILES) == 100) {
+        SetSystemChargeRate(SYSTEM_SHIELDS, 0);
+        SetSystemChargeRate(SYSTEM_LASERS, 0);
+        SetSystemChargeRate(SYSTEM_MISSILES, 0);
+//            SetStatusMessage("Search Mode all");
+    }//if
+
 
 }//end generator-----------------------------------------------------------------|
 
@@ -280,7 +263,18 @@ void shields(){                                                        //shields
 }//end shields------------------------------------------------------------------|
 
 void weapons(){                                                        //weapons
+    bool rRadar, lRadar, fRange;               //values for the radars
 
+    //get sensor data to determine what state we are in
+    rRadar = GetSensorData(0);
+    lRadar = GetSensorData(1);
+    fRange = GetSensorData(2);
+
+    //fire rockets when charge is full and on target
+    if (rRadar == 1 && lRadar == 1 && fRange == 1 && GetSystemEnergy(SYSTEM_MISSILES) == 100)
+    {
+
+    }//fire rockets
 }//end weapons------------------------------------------------------------------|
 
 
