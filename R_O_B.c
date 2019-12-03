@@ -24,8 +24,8 @@ bool IsOnTrack(int dest_head, int curr_head);
 
 //setupROB - Robot setup
 void setupROB(void){                                                    //setupROB
-    AddSensor(0, SENSOR_RADAR, 0, 30, 100);             //RIGHT SENSOR      0
-    AddSensor(1, SENSOR_RADAR, 330, 30, 100);           //LEFT SENSOR       1
+    AddSensor(0, SENSOR_RADAR, 0, 10, 100);             //RIGHT SENSOR      0
+    AddSensor(1, SENSOR_RADAR, 350, 10, 100);           //LEFT SENSOR       1
     AddSensor(2, SENSOR_RANGE, 0, 0, 0);                //FRONT RANGE       2
     AddSensor(3, SENSOR_RANGE, 90, 0, 0);              //REAR RANGE        3
 }//setupROB end------------------------------------------------------------------|
@@ -51,7 +51,8 @@ void generator (bool isDefense,bool isAttack,bool isSearch,bool isStart){       
     bool sysChange;              //System change priorities
 
     SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
-    SYSTEM priAttSys[4] = {SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_SHIELDS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    SYSTEM priStartSys[1] = {SYSTEM_SHIELDS};                                                //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    SYSTEM priAttSys[4] = {SYSTEM_SHIELDS, SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
     SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };              //System priorities 0=shields 1=sensors 2=lasers 3=missiles
 
     //if in Start mode
@@ -213,7 +214,7 @@ void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isSt
  //       }//if
 
     } else if(isAttack) {
-        SetStatusMessage("Attack mode!");
+        //SetStatusMessage("Attack mode!");
         if (GetSensorData(2) > 50 && GetSensorData(2) < 125) {
             SetMotorSpeeds(100, 100);
         } else if(GetSensorData(2) < 50) {
@@ -226,7 +227,7 @@ void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isSt
             SetMotorSpeeds(100, 100);
 //            SetStatusMessage("No target found...");
         }
-
+        weapons();
 
     } else if(isDefense) {
         if (GetSensorData(0) == 0 && GetSensorData(1) == 0 && IsTurboOn() == 0 && GetSensorData(2) == 125){
@@ -264,17 +265,26 @@ void shields(){                                                        //shields
 
 void weapons(){                                                        //weapons
     bool rRadar, lRadar, fRange;               //values for the radars
+    char string[20];
 
     //get sensor data to determine what state we are in
     rRadar = GetSensorData(0);
     lRadar = GetSensorData(1);
     fRange = GetSensorData(2);
 
-    //fire rockets when charge is full and on target
-    if (rRadar == 1 && lRadar == 1 && fRange == 1 && GetSystemEnergy(SYSTEM_MISSILES) == 100)
-    {
+    sprintf(string, "%d %d %d", rRadar, lRadar, fRange);
+    SetStatusMessage(string);
 
+    //fire rockets when charge is full and on target
+    if (rRadar == 1 && lRadar == 1 && fRange != 125 && GetSystemEnergy(SYSTEM_MISSILES) == 100)
+    {
+        FireWeapon(WEAPON_MISSILE, 0);
     }//fire rockets
+    //fire lasers when charge is full and on target
+    if (rRadar == 1 && lRadar == 1 && fRange != 125 && GetSystemEnergy(SYSTEM_LASERS) == 50)
+    {
+        FireWeapon(WEAPON_LASER, 0);
+    }//fire lasers
 }//end weapons------------------------------------------------------------------|
 
 
@@ -392,7 +402,7 @@ int heading(GPS_INFO gps){//determining search
 
 //IsOnTrack: checks if robot is on heading during search
 bool IsOnTrack(int dest_head, int curr_head) {
-    if (abs(curr_head - dest_head - 180) > 20 || abs(curr_head - dest_head) - 180 < -20 ) {
+    if (abs(curr_head - dest_head - 180) > 20 && abs(curr_head - dest_head) - 180 < -20 ) {
         if(dest_head > 0)
             return false;
         else
