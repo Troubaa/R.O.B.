@@ -24,8 +24,8 @@ bool IsOnTrack(int dest_head, int curr_head);
 
 //setupROB - Robot setup
 void setupROB(void){                                                    //setupROB
-    AddSensor(0, SENSOR_RADAR, 0, 10, 100);             //RIGHT SENSOR      0
-    AddSensor(1, SENSOR_RADAR, 350, 10, 100);           //LEFT SENSOR       1
+    AddSensor(0, SENSOR_RADAR, 0, 30, 100);             //RIGHT SENSOR      0
+    AddSensor(1, SENSOR_RADAR, 330, 30, 100);           //LEFT SENSOR       1
     AddSensor(2, SENSOR_RANGE, 0, 0, 0);                //FRONT RANGE       2
     AddSensor(3, SENSOR_RANGE, 90, 0, 0);              //REAR RANGE        3
 }//setupROB end------------------------------------------------------------------|
@@ -41,8 +41,15 @@ void ROB_AI (int time) {//ROB_AI
 
     determine(&isDefense, &isAttack, &isSearch, &isStart, timer);
     generator(isDefense, isAttack, isSearch, isStart);
-    if(isSearch == true)
-        GetGPSInfo(&gps);        //Retrieves GPS info
+    if(isSearch == true) {
+        if (heading(gps) < 0) {
+            if(timer % 5 == 0) {
+                GetGPSInfo(&gps);
+            }
+        } else {
+            GetGPSInfo(&gps);        //Retrieves GPS info
+        }
+    }
     movement(timer, isSearch, isAttack, isDefense, isStart, gps);
     timer += 1;
 }//ROB_AI end--------------------------------------------------------------------|
@@ -153,7 +160,7 @@ void determine (bool* isDefense,bool* isAttack,bool* isSearch, bool* isStart, in
             *isStart = false;
         }//if
     }//is */
-    if(timer > 100) {
+    if(GetSystemEnergy(SYSTEM_SHIELDS) == MAX_SHIELD_ENERGY) {
         *isStart = false;
     }
 
@@ -197,45 +204,46 @@ void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isSt
 
     if(isSearch) { // search mode
         int currentHeading = (int) gps.heading; //simplicity
-   //     if (timer % 3 == 0) {
-            if (IsOnTrack(heading(gps), currentHeading) == false) { //check if robot needs to turn
-                if (currentHeading - heading(gps) < -180 || (currentHeading - heading(gps) > 0 &&
-                                                             currentHeading - heading(gps) <
-                                                             180)) { //if robot needs to turn counter clockwise
-                    SetMotorSpeeds(-100, 100);
-                } else {
-                    SetMotorSpeeds(100, -100);
-                } //end if
-//                SetStatusMessage("I want to turn!");
+        //     if (timer % 3 == 0) {
+        if (IsOnTrack(heading(gps), currentHeading) == false) { //check if robot needs to turn
+            if (currentHeading - heading(gps) < -180 || (currentHeading - heading(gps) > 0 &&
+                                                         currentHeading - heading(gps) <
+                                                         180)) { //if robot needs to turn counter clockwise
+                SetMotorSpeeds(-100, 100);
             } else {
+                SetMotorSpeeds(100, -100);
+            } //end if
+//                SetStatusMessage("I want to turn!");
+        } else {
 //                SetStatusMessage("No turning for me!");
-                SetMotorSpeeds(100, 100);
-            }// end if
- //       }//if
+            SetMotorSpeeds(100, 100);
+        }// end if
+        //       }//if
 
     } else if(isAttack) {
-        //SetStatusMessage("Attack mode!");
+        SetStatusMessage("Attack mode!");
         if (GetSensorData(2) > 50 && GetSensorData(2) < 125) {
             SetMotorSpeeds(100, 100);
         } else if(GetSensorData(2) < 50) {
+            weapons();
             SetMotorSpeeds(-100, -100);
         } else if(GetSensorData(1) == 1) {
-            SetMotorSpeeds(80, 100);
+            SetMotorSpeeds(40, 100);
         } else if(GetSensorData(0) == 0) {
-            SetMotorSpeeds(100,80);
+            SetMotorSpeeds(100,40);
         } else {
             SetMotorSpeeds(100, 100);
 //            SetStatusMessage("No target found...");
         }
-        weapons();
+
 
     } else if(isDefense) {
         if (GetSensorData(0) == 0 && GetSensorData(1) == 0 && IsTurboOn() == 0 && GetSensorData(2) == 125){
             SetMotorSpeeds(100, 100);
             TurboBoost();
         } else {
-                SetMotorSpeeds(100,-100);
-            }
+            SetMotorSpeeds(100,-100);
+        }
 
 
     } /*else if(isStart) {
@@ -249,7 +257,7 @@ void movement(int timer, bool isSearch, bool isAttack, bool isDefense, bool isSt
 }//end movement----------------------------------------------------------------|
 
 void search(bool time){
-        //search
+    //search
 
 
 }//end search-------------------------------------------------------------------|
@@ -263,7 +271,7 @@ void shields(){                                                        //shields
 
 }//end shields------------------------------------------------------------------|
 
-void weapons(){                                                        //weapons
+void weapons(){//weapons
     bool rRadar, lRadar, fRange;               //values for the radars
     char string[20];
 
@@ -303,16 +311,16 @@ void weapons(){                                                        //weapons
 //------------------------------------------------------------------------------|
 int location(GPS_INFO gps){                                         //location
 
-        //inside zone 1
-        if (gps.x >= 275 && gps.y <= 100){
+    //inside zone 1
+    if (gps.x >= 275 && gps.y <= 100){
 
-            return 1;
-        }//if
+        return 1;
+    }//if
 
-        //inside zone 2
-        if (gps.x >= 100 && gps.x <= 275 && gps.y <= 100){
+    //inside zone 2
+    if (gps.x >= 100 && gps.x <= 275 && gps.y <= 100){
 
-            return 2;
+        return 2;
     }//if
 
     //inside zone 3
@@ -361,21 +369,21 @@ int location(GPS_INFO gps){                                         //location
 //          to turn towards.
 int heading(GPS_INFO gps){//determining search
     if (location(gps) == 1) {
-        return 225;
+        return 315;
     } else if(location(gps) == 2) {
         return 270;
     } else if(location(gps) == 3) {
-        return 315;
+        return 225;
     } else if(location(gps) == 4) {
-        return 0;
-    } else if(location(gps) == 6) {
         return 180;
+    } else if(location(gps) == 6) {
+        return 0;
     } else if(location(gps) == 7) {
-        return 135;
+        return 45;
     } else if(location(gps) == 8) {
         return 90;
     } else if(location(gps) == 9) {
-        return 45;
+        return 135;
     } else
         return -1; //if centre quadrant
 
@@ -402,7 +410,10 @@ int heading(GPS_INFO gps){//determining search
 
 //IsOnTrack: checks if robot is on heading during search
 bool IsOnTrack(int dest_head, int curr_head) {
-    if (abs(curr_head - dest_head - 180) > 20 && abs(curr_head - dest_head) - 180 < -20 ) {
+    char buffer[15];
+    sprintf(buffer, "%d %d", curr_head, dest_head);
+    SetStatusMessage(buffer);
+    if (abs(curr_head - dest_head - 180) > 5 && abs(curr_head - dest_head) - 180 < -5 ) {
         if(dest_head > 0)
             return false;
         else
