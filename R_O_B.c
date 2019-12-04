@@ -6,7 +6,7 @@
 #include "R_O_B.h"
 #include <stdlib.h>
 
-#define STARTTIMER 12           //Sets how long you are in the start mode
+#define STARTTIMER 30           //Sets how long you are in the start mode
 #define ATTACKFOLLOWDIST 75
 
 //for which mode we want to be in
@@ -31,7 +31,7 @@ bool IsOnTrack(int dest_head, int curr_head);
 //setupROB - Robot setup
 void setupROB(void){                                                    //setupROB
     AddSensor(0, SENSOR_RADAR, 75, 45, 100);             //Right SENSOR      0
-    AddSensor(1, SENSOR_RADAR, 343, 35, 100);           //Front SENSOR       1
+    AddSensor(1, SENSOR_RADAR, 350, 20, 100);           //Front SENSOR       1
     AddSensor(2, SENSOR_RANGE, 350, 0, 0);               //Left RANGE       2
     AddSensor(3, SENSOR_RANGE, 10, 0, 0);                //Right RANGE        3
 }//setupROB end------------------------------------------------------------------|
@@ -160,20 +160,21 @@ void determine (mode* isMode, int timer){
     rRadar = GetSensorData(0);
     lRadar = GetSensorData(1);
 
+    //if start
+    if (timer <= STARTTIMER) {
+        *isMode = Start;
+    }//if
+
+    //get out of start
+    if (timer >= STARTTIMER && *isMode == Start) {
+        *isMode = Search;
+    }//if
+
     //if we are Hit (defence)
     if (GetSystemEnergy(SYSTEM_SHIELDS) <= 500) {
         if(GetBumpInfo() == 0x04 || GetBumpInfo() == 0x08) {
             *isMode = Defence;
         }//if
-    }//if
-
-    //if we want to attack
-    if (lRadar == true) {
-        *isMode = Attack;
-
-        //if target triggered reset values
-        isSearch = false;
-        searchTime = 0;
     }//if
 
     //if target on the right
@@ -193,19 +194,14 @@ void determine (mode* isMode, int timer){
         *isMode = Search;
     }//if
 
-    //if start
-    if (timer <= STARTTIMER) {
-        *isMode = Start;
-    }//if
+    //if we want to attack
+    if (lRadar == true) {
+        *isMode = Attack;
 
-    //get out of start
-    if (timer >= STARTTIMER && *isMode == Start) {
-        *isMode = Search;
+        //if target triggered reset values
+        isSearch = false;
+        searchTime = 0;
     }//if
-
-    char string[20];
-    sprintf(string, "%d", *isMode);
-    SetStatusMessage(string);
 }//end determine----------------------------------------------------------------|
 
 void movement(int timer, mode* isMode, GPS_INFO gps){                                               //movement
@@ -216,8 +212,6 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
     static int searchM1 = 50;
     static int searchM2 = 100;
     bool cant_turn;
-
-    int test1, test2;
 
     //if start
     if(*isMode == Start) {
@@ -253,6 +247,7 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
         if(GetBumpInfo() == 0x01)
             isBumpWall = true;
 
+
         //bumpwall
         if (isBumpWall == true){
             cant_turn = GetGPSInfo(&gps);
@@ -274,21 +269,25 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
 
     //if attack
     if(*isMode == Attack) {
-        SetMotorSpeeds(100, 100);
-
+        //SetMotorSpeeds(100, 100);
+        SetMotorSpeeds( 100 * GetSensorData(2)/ GetSensorData(3),   100 * GetSensorData(3)/ GetSensorData(2));
+        char string[20];
+        sprintf(string, "%d %d", 100 * GetSensorData(2)/ GetSensorData(3), 100 * GetSensorData(3)/ GetSensorData(2));
+        SetStatusMessage(string);
         if (GetSensorData(2) > ATTACKFOLLOWDIST && GetSensorData(3) > ATTACKFOLLOWDIST) {
             SetMotorSpeeds(100, 100);
         }//if
         if(GetSensorData(2) < ATTACKFOLLOWDIST && GetSensorData(3) < ATTACKFOLLOWDIST) {
             SetMotorSpeeds(-100, -100);
         }//if
-        if(GetSensorData(2) != 125 && GetSensorData(3) == 125) {
-            SetMotorSpeeds(40, 100);
+/*        if(GetSensorData(2) - GetSensorData(3) < -20) {
+            SetMotorSpeeds( abs(10 * GetSensorData(2)/ GetSensorData(3)),   100);
         }//if
-        if(GetSensorData(3) != 125 && GetSensorData(2) == 125){
-            SetMotorSpeeds(100,40);
-        }//if
+        if(GetSensorData(2) - GetSensorData(3) > 20){
+            SetMotorSpeeds(100,abs(100 + GetSensorData(2) - GetSensorData(3)));
+        }//if*/
         //fire
+
         weapons();
     }//if attack
 
@@ -312,6 +311,7 @@ void weapons(){//weapons
     fRadar = GetSensorData(1);
     lRange = GetSensorData(2);
     rRange = GetSensorData(3);
+    genStruct = GetGeneratorStructure();
     //genStruct = GetGeneratorStructure();
 
     //fire rockets when charge is full and on target
@@ -428,9 +428,6 @@ int heading(GPS_INFO gps){//determining search
 
 //IsOnTrack: checks if robot is on heading during search
 bool IsOnTrack(int dest_head, int curr_head) {
-    char buffer[15];
-    sprintf(buffer, "%d %d", curr_head, dest_head);
-    SetStatusMessage(buffer);
 /*    if (abs(curr_head - dest_head - 180) > 5 && abs(curr_head - dest_head) - 180 < -5 ) {
         if(dest_head > 0)
             return false;
