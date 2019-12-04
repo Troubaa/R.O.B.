@@ -40,7 +40,6 @@ void setupROB(void){                                                    //setupR
 void ROB_AI (int time) {//ROB_AI
     mode isMode;           //if in searching mode
     static GPS_INFO gps;            //GPS info.
-
     static int timer;
 
     determine(&isMode, timer);
@@ -270,16 +269,20 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
     //if attack
     if(*isMode == Attack) {
         //SetMotorSpeeds(100, 100);
-        SetMotorSpeeds( 100 * GetSensorData(2)/ GetSensorData(3),   100 * GetSensorData(3)/ GetSensorData(2));
+
         char string[20];
         sprintf(string, "%d %d", 100 * GetSensorData(2)/ GetSensorData(3), 100 * GetSensorData(3)/ GetSensorData(2));
         SetStatusMessage(string);
         if (GetSensorData(2) > ATTACKFOLLOWDIST && GetSensorData(3) > ATTACKFOLLOWDIST) {
             SetMotorSpeeds(100, 100);
         }//if
+        else
+            SetMotorSpeeds( 100 * GetSensorData(2)/ GetSensorData(3),   100 * GetSensorData(3)/ GetSensorData(2));
         if(GetSensorData(2) < ATTACKFOLLOWDIST && GetSensorData(3) < ATTACKFOLLOWDIST) {
             SetMotorSpeeds(-100, -100);
         }//if
+        else
+            SetMotorSpeeds( 100 * GetSensorData(2)/ GetSensorData(3),   100 * GetSensorData(3)/ GetSensorData(2));
 /*        if(GetSensorData(2) - GetSensorData(3) < -20) {
             SetMotorSpeeds( abs(10 * GetSensorData(2)/ GetSensorData(3)),   100);
         }//if
