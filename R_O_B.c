@@ -21,7 +21,7 @@ typedef enum{
 //functions
 void determine(mode* isMode, int timer);                            //This function determines which mode we will go into
 void generator (mode isMode);                                       //This function sets what the power priorities, charge rates and changes which sensors are on
-void movement (int timer, mode* isMode, GPS_INFO gps);              //This function changes movement patterns based on the mode
+void movement (int timer, mode* isMode, GPS_INFO gps, int bump);              //This function changes movement patterns based on the mode
 int location (GPS_INFO gps);                                        //This function returns what zone in the map we are in based on gps scan
 int heading(GPS_INFO gps);                                          //This function returns returns the heading we want to move to based on what zone we are in
 void weapons();                                                     //This function will fire weapons based on sensor readings
@@ -46,7 +46,7 @@ void ROB_AI (int time) {//ROB_AI
     //Generate power
     generator(isMode);
     //Move robot
-    movement(timer, &isMode, gps);
+    movement(timer, &isMode, gps); 
     //increase time
     //note: doesnt increases close to real time sec
     timer += 1;
@@ -156,10 +156,12 @@ void generator (mode isMode){                                                   
 
 }//end generator-----------------------------------------------------------------|
 
-void determine (mode* isMode, int timer){
+void determine (mode* isMode, int timer, int bump){
     bool rRadar, lRadar, fRange, bRange;               //values for the radars
     static bool isSearch = false;
     static int searchTime = 0;
+    static int HitTurnTime;
+    bool GotBumped;
 
     //get sensor data to determine what state we are in
     rRadar = GetSensorData(0);
@@ -175,13 +177,6 @@ void determine (mode* isMode, int timer){
         *isMode = Search;
     }//if
 
-    //if we are Hit (defence)
-    if (GetSystemEnergy(SYSTEM_SHIELDS) <= 500) {
-        if(GetBumpInfo() == 0x04 || GetBumpInfo() == 0x08) {
-            *isMode = Defence;
-        }//if
-    }//if
-
     //if target on the right
     if ((GetSensorData(0) == 1 || isSearch == true)) {
         *isMode = Target;
@@ -194,11 +189,25 @@ void determine (mode* isMode, int timer){
         }//if
     }//if target
 
-    //if we want to Search
-    if (lRadar == false && *isMode != Target && *isMode != Hit) {
-        *isMode = Search;
-    }//if
+    ///if we want to Search
+    if(bump == 0x04 || bump == 0x08 || bump == 0x02) {
+        GotBumped = true;
+        SetStatusMessage("I've been hit!");
+    } else
+        GotBumped = false;
 
+    if (lRadar == false && *isMode != Target && *isMode != Hit) {
+
+        if (GotBumped == true) {
+            *isMode = Hit;
+            HitTurnTime = timer;
+            HitTurnTime += 10;
+            SetStatusMessage("I've been hit!");
+        } else if (HitTurnTime > timer)
+            *isMode = Hit;
+        else
+            *isMode = Search;
+    }
     //if we want to attack
     if (lRadar == true) {
         *isMode = Attack;
@@ -209,7 +218,7 @@ void determine (mode* isMode, int timer){
     }//if
 }//end determine----------------------------------------------------------------|
 
-void movement(int timer, mode* isMode, GPS_INFO gps){                                               //movement
+void movement(int timer, mode* isMode, GPS_INFO gps, int bump){                                               //movement
     char i =0;
     static bool isBumpWall = false;
     static bool isInc = true;
@@ -300,6 +309,10 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
             SetMotorSpeeds(100, -100);
         }//if defense
     }//if defense
+
+    if(*isMode == Hit) {
+        SetMotorSpeeds(-100,100);
+    }//if hit
 
 }//end movement----------------------------------------------------------------|
 
