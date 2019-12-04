@@ -186,7 +186,7 @@ void determine (mode* isMode, int timer, int bump){
         }//if
     }//if target
 
-    ///if we want to Search
+    //if we want to Search
     if(bump == 0x04 || bump == 0x08 || bump == 0x02) {
         GotBumped = true;
         SetStatusMessage("I've been hit!");
@@ -199,7 +199,6 @@ void determine (mode* isMode, int timer, int bump){
             *isMode = Hit;
             HitTurnTime = timer;
             HitTurnTime += 10;
-            SetStatusMessage("I've been hit!");
         } else if (HitTurnTime > timer)
             *isMode = Hit;
         else
@@ -255,7 +254,7 @@ void movement(int timer, mode* isMode, GPS_INFO gps, int bump){                 
         SetMotorSpeeds(searchM1, searchM2);
 
         //if hit wall
-        if(GetBumpInfo() == 0x01)
+        if(bump == 0x01)
             isBumpWall = true;
 
 
@@ -322,9 +321,11 @@ void movement(int timer, mode* isMode, GPS_INFO gps, int bump){                 
 
 }//end movement----------------------------------------------------------------|
 
+//weapons - when called, fires missiles and/or lasers under
+//          the proper conditions
 void weapons(){//weapons
     int fRadar, lRange, rRange;               //values for the radars
-    int genStruct;
+    int genStruct;                            //simplifies process of checking generator structure
 
     //get sensor data to determine what state we are in
     fRadar = GetSensorData(1);
@@ -366,29 +367,27 @@ void weapons(){//weapons
 //          3              |                2                 |             1   |
 //                         |                                  |                 |
 //------------------------------------------------------------------------------|
+//location - this function finds the current
+//           quadrant of the robot
 int location(GPS_INFO gps){                                         //location
 
     //inside zone 1
     if (gps.x >= 275 && gps.y <= 100){
-
         return 1;
     }//if
 
     //inside zone 2
     if (gps.x >= 100 && gps.x <= 275 && gps.y <= 100){
-
         return 2;
     }//if
 
     //inside zone 3
     if (gps.x <= 100 && gps.y <= 100){
-
         return 3;
     }//if
 
     //inside zone 4
     if (gps.x >= 275 && gps.y >= 100 && gps.y <= 275){
-
         return 4;
     }//if
 
@@ -396,35 +395,30 @@ int location(GPS_INFO gps){                                         //location
 
     //inside zone 6
     if(gps.x <= 100 && gps.y >= 100 && gps.y <=275){
-
         return 6;
     }//if
 
     //inside zone 7
     if (gps.x >= 275 && gps.y >= 275){
-
         return 7;
     }//if
 
     //inside zone 8
     if (gps.x >= 100 && gps.x <= 275 && gps.y >= 275){
-
         return 8;
     }//if
 
     //inside zone 9
     if (gps.x <= 100 && gps.y >= 275){
-
         return 9;
     }//if
 
-
-    return 5; //centre zone
+    return 5; //centre zone if nothing else returns
 }//end location-------------------------------------------------------------|
 
 //heading - this function will grab the wanted search heading
-//          to turn towards.
-int heading(GPS_INFO gps){//determining search
+//          to turn towards, depending on the map quadrant it's in.
+int heading(GPS_INFO gps){
     if (location(gps) == 1) {
         return 135;
     } else if(location(gps) == 2) {
@@ -442,20 +436,12 @@ int heading(GPS_INFO gps){//determining search
     } else if(location(gps) == 9) {
         return 315;
     } else
-        return -1; //if centre quadrant
+        return -1; //if in centre quadrant, does not need to turn
 }//end heading-----------------------------------------------------------------|
 
 //IsOnTrack: checks if robot is on heading during search
 bool IsOnTrack(int dest_head, int curr_head) {
-/*    if (abs(curr_head - dest_head - 180) > 5 && abs(curr_head - dest_head) - 180 < -5 ) {
-        if(dest_head > 0)
-            return false;
-        else
-            return true;
-    } else {
-        return true;
-    }//if*/
-if (dest_head - curr_head >= -20 && dest_head - curr_head <= 20)
+if (dest_head - curr_head >= -20 && dest_head - curr_head <= 20) // if heading is +- 20 of intended heading
     return true;
 else
     return false;
