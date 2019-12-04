@@ -19,9 +19,9 @@ typedef enum{
 } bool;
 
 //functions
-void determine(mode* isMode, int timer);                            //This function determines which mode we will go into
+void determine(mode* isMode, int timer, int bump);                  //This function determines which mode we will go into
 void generator (mode isMode);                                       //This function sets what the power priorities, charge rates and changes which sensors are on
-void movement (int timer, mode* isMode, GPS_INFO gps, int bump);              //This function changes movement patterns based on the mode
+void movement (int timer, mode* isMode, GPS_INFO gps, int bump);    //This function changes movement patterns based on the mode
 int location (GPS_INFO gps);                                        //This function returns what zone in the map we are in based on gps scan
 int heading(GPS_INFO gps);                                          //This function returns returns the heading we want to move to based on what zone we are in
 void weapons();                                                     //This function will fire weapons based on sensor readings
@@ -39,14 +39,17 @@ void setupROB(void){                                                    //setupR
 void ROB_AI (int time) {//ROB_AI
     mode isMode;                    //this tells what mode we are currently in
     static GPS_INFO gps;            //structure that holds x,y coordinates and our current heading
+    static int bump;                //holds values for what out robot has hit
     static int timer;               //Our own made timer
 
+    bump = GetBumpInfo();
+
     //determine what mode we are in
-    determine(&isMode, timer);
+    determine(&isMode, timer, bump);
     //Generate power
     generator(isMode);
     //Move robot
-    movement(timer, &isMode, gps); 
+    movement(timer, &isMode, gps, bump);
     //increase time
     //note: doesnt increases close to real time sec
     timer += 1;
@@ -57,10 +60,11 @@ void ROB_AI (int time) {//ROB_AI
 void generator (mode isMode){                                                     //generator
     bool sysChange;              //System change priorities passes successfully
 
-    SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
-    SYSTEM priStartSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS};                //System priorities 0=shields
-    SYSTEM priAttSys[4] = {SYSTEM_SHIELDS, SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
-    SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };              //System priorities 0=shields 1=sensors 2=lasers 3=missiles
+    //set system priorities based on mode
+    SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};
+    SYSTEM priStartSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS};
+    SYSTEM priAttSys[4] = {SYSTEM_SHIELDS, SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS};
+    SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };
 
     //if lasers full
     if (GetSystemEnergy(SYSTEM_LASERS) == 50){
@@ -120,6 +124,7 @@ void generator (mode isMode){                                                   
 
     //if in Start mode
     if(isMode == Start) {
+        //update which sensors are on and off
         SetSensorStatus(0,1);
         SetSensorStatus(1,0);
         SetSensorStatus(2,0);
@@ -129,6 +134,7 @@ void generator (mode isMode){                                                   
 
     //if in Defense mode
     if(isMode == Defence) {
+        //update which sensors are on and off
         SetSensorStatus(0,0);
         SetSensorStatus(1,1);
         SetSensorStatus(2,1);
@@ -138,6 +144,7 @@ void generator (mode isMode){                                                   
 
     //if in Attack mode
     if(isMode == Attack) {
+        //update which sensors are on and off
         SetSensorStatus(0,0);
         SetSensorStatus(1,1);
         SetSensorStatus(2,1);
@@ -147,6 +154,7 @@ void generator (mode isMode){                                                   
 
     //if in Search mode
     if(isMode == Search) {
+        //update which sensors are on and off
         SetSensorStatus(0,1);
         SetSensorStatus(1,1);
         SetSensorStatus(2,0);
@@ -156,18 +164,22 @@ void generator (mode isMode){                                                   
 
 }//end generator-----------------------------------------------------------------|
 
+//determine - This function determines which mode we will go into
+//isMode - which mode the robot is in
+//timer - holds around real time in sec
+//bump - holds the values for what the robot bumped into
 void determine (mode* isMode, int timer, int bump){
-    bool rRadar, lRadar, fRange, bRange;               //values for the radars
-    static bool isSearch = false;
-    static int searchTime = 0;
-    static int HitTurnTime;
-    bool GotBumped;
+    bool rRadar, lRadar, fRange, bRange;               //if radar reads a value
+    static bool isSearch = false;                      //true if we are searching
+    static int searchTime = 0;                         //counter for how long to search
+    static int HitTurnTime;                            //counter for how long to turn when hit
+    bool GotBumped;                                    //true if we hit something
 
     //get sensor data to determine what state we are in
     rRadar = GetSensorData(0);
     lRadar = GetSensorData(1);
 
-    //if start
+    //if start of match charge shields before searching
     if (timer <= STARTTIMER) {
         *isMode = Start;
     }//if
@@ -189,25 +201,23 @@ void determine (mode* isMode, int timer, int bump){
         }//if
     }//if target
 
-    ///if we want to Search
+    //if we got hit by lasers, missles or another robot
     if(bump == 0x04 || bump == 0x08 || bump == 0x02) {
         GotBumped = true;
-        SetStatusMessage("I've been hit!");
     } else
         GotBumped = false;
-
+    //if we want to Search
     if (lRadar == false && *isMode != Target && *isMode != Hit) {
-
+        //if hit in search mode turn around to find them
         if (GotBumped == true) {
             *isMode = Hit;
             HitTurnTime = timer;
             HitTurnTime += 10;
-            SetStatusMessage("I've been hit!");
         } else if (HitTurnTime > timer)
             *isMode = Hit;
         else
             *isMode = Search;
-    }
+    }//else
     //if we want to attack
     if (lRadar == true) {
         *isMode = Attack;
@@ -218,14 +228,18 @@ void determine (mode* isMode, int timer, int bump){
     }//if
 }//end determine----------------------------------------------------------------|
 
+//This function changes movement patterns based on the mode
+//isMode - which mode the robot is in
+//timer - holds around real time in sec
+//gps - this holds the coordinates for our robot
+//bump - holds the values for what the robot bumped into
 void movement(int timer, mode* isMode, GPS_INFO gps, int bump){                                               //movement
-    char i =0;
-    static bool isBumpWall = false;
-    static bool isInc = true;
-    static int mid = 0;
-    static int searchM1 = 50;
-    static int searchM2 = 100;
-    bool cant_turn;
+    static bool isBumpWall = false;         //if we hit a wall
+    static bool isInc = true;               //if our value needs to increase
+    static int mid = 0;                     //number determines what to subtract motor speeds by
+    static int searchM1 = 50;               //search motor 1
+    static int searchM2 = 100;              //search motor 2
+    bool cant_turn;                         //if our robot doesnt have enoughb power to remove
 
     //if start
     if(*isMode == Start) {
@@ -258,7 +272,7 @@ void movement(int timer, mode* isMode, GPS_INFO gps, int bump){                 
         SetMotorSpeeds(searchM1, searchM2);
 
         //if hit wall
-        if(GetBumpInfo() == 0x01)
+        if(bump == 0x01)
             isBumpWall = true;
 
 
