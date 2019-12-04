@@ -4,55 +4,61 @@
 
 #include "competition.h"
 #include "R_O_B.h"
-#include <stdlib.h>
 
 #define STARTTIMER 30           //Sets how long you are in the start mode
-#define ATTACKFOLLOWDIST 75
+#define ATTACKFOLLOWDIST 75     //Sets the distance which we follow targeted robot in attack mode
 
-//for which mode we want to be in
+//mode - for which mode we want to be in
 typedef enum{
     Defence, Attack, Search, Start, Hit, Target
 } mode;
 
-//true of false
+//bool - for true of false
 typedef enum{
     false, true
 } bool;
 
 //functions
-void determine(mode* isMode, int timer);
-void generator (mode isMode);
-void movement (int timer, mode* isMode, GPS_INFO gps);
-int location (GPS_INFO gps);
-int heading(GPS_INFO gps);
-void weapons();
-bool IsOnTrack(int dest_head, int curr_head);
+void determine(mode* isMode, int timer);                            //This function determines which mode we will go into
+void generator (mode isMode);                                       //This function sets what the power priorities, charge rates and changes which sensors are on
+void movement (int timer, mode* isMode, GPS_INFO gps);              //This function changes movement patterns based on the mode
+int location (GPS_INFO gps);                                        //This function returns what zone in the map we are in based on gps scan
+int heading(GPS_INFO gps);                                          //This function returns returns the heading we want to move to based on what zone we are in
+void weapons();                                                     //This function will fire weapons based on sensor readings
+bool IsOnTrack(int dest_head, int curr_head);                       //This function will move the robot to the heading we want based on previous heading
 
-//setupROB - Robot setup
+//setupROB - This function will setup the sensors on our robot
 void setupROB(void){                                                    //setupROB
-    AddSensor(0, SENSOR_RADAR, 75, 45, 100);             //Right SENSOR      0
-    AddSensor(1, SENSOR_RADAR, 350, 20, 100);           //Front SENSOR       1
-    AddSensor(2, SENSOR_RANGE, 350, 0, 0);               //Left RANGE       2
+    AddSensor(0, SENSOR_RADAR, 75, 45, 100);             //Right SENSOR       0
+    AddSensor(1, SENSOR_RADAR, 350, 20, 100);            //Front SENSOR       1
+    AddSensor(2, SENSOR_RANGE, 350, 0, 0);               //Left RANGE         2
     AddSensor(3, SENSOR_RANGE, 10, 0, 0);                //Right RANGE        3
 }//setupROB end------------------------------------------------------------------|
 
-//ROB_AI - Robot Actions
+//ROB_AI - This function will run all the robots AI systems
 void ROB_AI (int time) {//ROB_AI
-    mode isMode;           //if in searching mode
-    static GPS_INFO gps;            //GPS info.
-    static int timer;
+    mode isMode;                    //this tells what mode we are currently in
+    static GPS_INFO gps;            //structure that holds x,y coordinates and our current heading
+    static int timer;               //Our own made timer
 
+    //determine what mode we are in
     determine(&isMode, timer);
+    //Generate power
     generator(isMode);
+    //Move robot
     movement(timer, &isMode, gps);
+    //increase time
+    //note: doesnt increases close to real time sec
     timer += 1;
 }//ROB_AI end--------------------------------------------------------------------|
 
+//generator - This function sets what the power priorities, charge rates and changes which sensors are on
+//isMode - holds values for which mode we are currently in
 void generator (mode isMode){                                                     //generator
     bool sysChange;              //System change priorities passes successfully
 
     SYSTEM priDefSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_LASERS, SYSTEM_MISSILES};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
-    SYSTEM priStartSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS};                                                                //System priorities 0=shields
+    SYSTEM priStartSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS};                //System priorities 0=shields
     SYSTEM priAttSys[4] = {SYSTEM_SHIELDS, SYSTEM_MISSILES, SYSTEM_SENSORS, SYSTEM_LASERS};                  //System priorities 0=shields 1=sensors 2=lasers 3=missiles
     SYSTEM priSearchSys[4] = {SYSTEM_SHIELDS, SYSTEM_SENSORS, SYSTEM_MISSILES, SYSTEM_LASERS };              //System priorities 0=shields 1=sensors 2=lasers 3=missiles
 
@@ -268,8 +274,6 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
 
     //if attack
     if(*isMode == Attack) {
-        //SetMotorSpeeds(100, 100);
-
         char string[20];
         sprintf(string, "%d %d", 100 * GetSensorData(2)/ GetSensorData(3), 100 * GetSensorData(3)/ GetSensorData(2));
         SetStatusMessage(string);
@@ -283,14 +287,7 @@ void movement(int timer, mode* isMode, GPS_INFO gps){                           
         }//if
         else
             SetMotorSpeeds( 100 * GetSensorData(2)/ GetSensorData(3),   100 * GetSensorData(3)/ GetSensorData(2));
-/*        if(GetSensorData(2) - GetSensorData(3) < -20) {
-            SetMotorSpeeds( abs(10 * GetSensorData(2)/ GetSensorData(3)),   100);
-        }//if
-        if(GetSensorData(2) - GetSensorData(3) > 20){
-            SetMotorSpeeds(100,abs(100 + GetSensorData(2) - GetSensorData(3)));
-        }//if*/
-        //fire
-
+    //fire weapons
         weapons();
     }//if attack
 
